@@ -353,6 +353,7 @@ def resolve_args(arg_str, context=None, resolve_anon=True):
     if not arg_str:
         return arg_str
     # special handling of $(eval ...)
+    # print "["+arg_str+"]"
     if arg_str.startswith('$(eval ') and arg_str.endswith(')'):
         return _eval(arg_str[7:-1], context)
     # first resolve variables like 'env' and 'arg'
@@ -361,6 +362,7 @@ def resolve_args(arg_str, context=None, resolve_anon=True):
         'optenv': _optenv,
         'anon': _anon,
         'arg': _arg,
+        'eval': None
     }
     resolved = _resolve_args(arg_str, context, resolve_anon, commands)
     # then resolve 'find' as it requires the subsequent path to be expanded already
@@ -371,7 +373,7 @@ def resolve_args(arg_str, context=None, resolve_anon=True):
     return resolved
 
 def _resolve_args(arg_str, context, resolve_anon, commands):
-    valid = ['find', 'env', 'optenv', 'anon', 'arg']
+    valid = ['find', 'env', 'optenv', 'anon', 'arg', 'eval']
     resolved = arg_str
     for a in _collect_args(arg_str):
         splits = [s for s in a.split(' ') if s]
@@ -380,7 +382,16 @@ def _resolve_args(arg_str, context, resolve_anon, commands):
         command = splits[0]
         args = splits[1:]
         if command in commands:
-            resolved = commands[command](resolved, a, args, context)
+            if "upper_proximity_thresh" in arg_str:
+                print command
+                print a
+                print arg_str
+                print "out: ",_eval(" ".join(args), context)
+                print "="*100
+            if command=="eval":
+                resolved = resolved.replace("$(%s)" % a, _eval(" ".join(args), context))
+            else:
+                resolved = commands[command](resolved, a, args, context)
     return resolved
 
 _OUT  = 0
